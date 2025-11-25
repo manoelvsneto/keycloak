@@ -29,20 +29,27 @@ stages:
         tokenSuffix: '__'
 
     - task: KubernetesManifest@0
+      displayName: Create namespace
+      inputs:
+        kubernetesServiceConnection: K8SOracleCloud
+        action: deploy
+        manifests: |
+          $(Build.SourcesDirectory)/k8s/namespace.yaml
+
+    - task: KubernetesManifest@0
       displayName: Deploy to Kubernetes cluster
       inputs:
         kubernetesServiceConnection: K8SOracleCloud
         action: deploy
         namespace: 'keycloak'
         manifests: |
-          $(Build.SourcesDirectory)/k8s/namespace.yaml
-          $(Build.SourcesDirectory)/k8s/certificate.yaml
+          $(Build.SourcesDirectory)/k8s/cluster-issuer.yaml
           $(Build.SourcesDirectory)/k8s/secrets.yaml
           $(Build.SourcesDirectory)/k8s/configmap.yaml
           $(Build.SourcesDirectory)/k8s/deployment.yaml
-          $(Build.SourcesDirectory)/k8s/services.yaml                       
+          $(Build.SourcesDirectory)/k8s/services.yaml
+          $(Build.SourcesDirectory)/k8s/certificate.yaml
           $(Build.SourcesDirectory)/k8s/ingress.yaml
-          $(Build.SourcesDirectory)/k8s/cluster-issuer.yaml
         imagePullSecrets: |
           $(imagePullSecret)
-        containers: 'keycloak:26.4'
+        containers: 'keycloak/keycloak:26.4'
