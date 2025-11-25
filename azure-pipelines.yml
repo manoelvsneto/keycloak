@@ -1,0 +1,48 @@
+pool:
+  name: Arm64
+  vmImage: 'ubuntu-22.04'
+
+trigger:
+- main
+resources:
+- repo: self
+variables:
+  imagePullSecret: 'regcred'
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: Build
+    displayName: Build
+    steps:
+
+    - task: replacetokens@3
+      displayName: Replace tokens in k8s files
+      inputs:
+        rootDirectory: '$(Build.SourcesDirectory)/k8s'
+        targetFiles: '**/*.yaml'
+        encoding: 'auto'
+        writeBOM: true
+        actionOnMissing: 'warn'
+        keepToken: false
+        tokenPrefix: '__'
+        tokenSuffix: '__'
+
+    - task: KubernetesManifest@0
+      displayName: Deploy to Kubernetes cluster
+      inputs:
+        kubernetesServiceConnection: K8SOracleCloud
+        action: deploy
+        namespace: 'keycloak'
+        manifests: |
+          $(Build.SourcesDirectory)/k8s/namespace.yaml
+          $(Build.SourcesDirectory)/k8s/certificate.yaml
+          $(Build.SourcesDirectory)/k8s/secrets.yaml
+          $(Build.SourcesDirectory)/k8s/configmap.yaml
+          $(Build.SourcesDirectory)/k8s/deployment.yaml
+          $(Build.SourcesDirectory)/k8s/services.yaml                       
+          $(Build.SourcesDirectory)/k8s/ingress.yaml
+          $(Build.SourcesDirectory)/k8s/cluster-issuer.yaml
+        imagePullSecrets: |
+          $(imagePullSecret)
+        containers: 'keycloak:26.4'
